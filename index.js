@@ -4,24 +4,20 @@ const ROWS = 120
 const ALIVE = 'hsl(0, 0%, 90%)'
 const DEAD = 'hsl(0, 0%, 10%)'
 
-const initialState = R.map(
-  () => Math.random() > 0.8 ? 1 : 0,
-  R.range(0, COLS * ROWS),
-)
+const initialState = [...Array(COLS * ROWS)].map(() => Math.random() > 0.8 ? 1 : 0)
 
 const neighbours = []
 for (let i = 0; i < ROWS; i++) {
   for (let j = 0; j < COLS; j++) {
     const [n, s, w, e] = [i - 1, i + 1, j - 1, j + 1]
-    neighbours[i * COLS + j] = R.map(
-      ([i, j]) => (i % ROWS) * COLS + (j % COLS),
-      [[n, w], [n, j], [n, e], [i, w], [i, e], [s, w], [s, j], [s, e]],
-    )
+    neighbours[i * COLS + j] =
+      [[n, w], [n, j], [n, e], [i, w], [i, e], [s, w], [s, j], [s, e]]
+        .map(([i, j]) => (i % ROWS) * COLS + (j % COLS))
   }
 }
 
 const step = (state) => state.map((cell, k) => {
-  const count = R.sum(neighbours[k].map((i) => state[i]))
+  const count = neighbours[k].map((i) => state[i]).reduce((a, b) => a + b, 0)
   return count === 3 ? 1 : count !== 2 ? 0 : cell
 })
 
