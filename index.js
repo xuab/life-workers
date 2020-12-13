@@ -1,3 +1,6 @@
+import Stats from './stats.js'
+const stats = new Stats()
+
 const SIZE = 4
 const COLS = 120
 const ROWS = 120
@@ -28,6 +31,7 @@ canvas.height = ROWS * SIZE
 const root = document.querySelector('#root')
 root.style.background = DEAD
 root.appendChild(canvas)
+root.appendChild(stats.dom)
 
 const ctx = canvas.getContext('2d')
 ctx.scale(SIZE, SIZE)
@@ -39,7 +43,9 @@ const render = (state) => state.forEach((cell, i) => {
 
 let state = initialState
 ;(function loop() {
+  stats.begin()
   render(state)
   state = step(state)
+  stats.end()
   requestAnimationFrame(loop)
 })()
