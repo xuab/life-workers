@@ -3,10 +3,8 @@ let world1 = null
 let world2 = null
 let curr = null
 let next = null
-let alive1 = null
-let alive2 = null
-let dead1 = null
-let dead2 = null
+let state1 = null
+let state2 = null
 let lock
 
 const init = (cols, rows) => {
@@ -24,24 +22,17 @@ const init = (cols, rows) => {
     }
   }
 
-  let aliveIndex = 0
-  let deadIndex = 0
+  let index = 0
   for (let i = 0; i < cols * rows; i ++) {
     const cell = Math.random() > 0.8 ? 1 : 0
     world1[i] = cell
-    if (cell === 1) {
-      Atomics.store(alive1, aliveIndex, i)
-      aliveIndex += 1
-    } else {
-      Atomics.store(dead1, deadIndex, i)
-      deadIndex += 1
-    }
+    Atomics.store(state1, index, cell === 1 ? i : -i)
+    index += 1
   }
 }
 
 const step = () => {
-  let aliveIndex = 0
-  let deadIndex = 0
+  let index = 0
 
   curr.forEach((cell, i) => {
     const count = neighbours[i].reduce((a, b) => a + curr[b], 0)
@@ -49,16 +40,15 @@ const step = () => {
     next[i] = nextCell
 
     if (cell > nextCell) {
-      Atomics.store(dead1, deadIndex, i)
-      deadIndex += 1
+      Atomics.store(state1, index, -i)
+      index += 1
     } else if (cell < nextCell) {
-      Atomics.store(alive1, aliveIndex, i)
-      aliveIndex += 1
+      Atomics.store(state1, index, i)
+      index += 1
     }
   })
 
-  if (aliveIndex < alive1.length) alive1[aliveIndex] = -1
-  if (deadIndex < dead1.length) dead1[deadIndex] = -1
+  if (index < state1.length) state1[index] = 0
 
   ;[curr, next] = [next, curr]
 }
@@ -67,16 +57,13 @@ self.addEventListener('message', (m) => {
   switch (m.data.type) {
     case 'step':
       Atomics.wait(lock, 0, 1)
-      ;[alive1, alive2] = [alive2, alive1]
-      ;[dead1, dead2] = [dead2, dead1]
+      ;[state1, state2] = [state2, state1]
       step()
       self.postMessage('render')
       return
     case 'init':
-      alive1 = new Int32Array(m.data.buffers.alive1)
-      alive2 = new Int32Array(m.data.buffers.alive2)
-      dead1 = new Int32Array(m.data.buffers.dead1)
-      dead2 = new Int32Array(m.data.buffers.dead2)
+      state1 = new Int32Array(m.data.buffers.state1)
+      state2 = new Int32Array(m.data.buffers.state2)
       lock = new Int32Array(m.data.buffers.lock)
       init(m.data.options.cols, m.data.options.rows)
       self.postMessage('render')

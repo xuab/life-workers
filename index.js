@@ -6,18 +6,14 @@ const rows = 300
 const aliveColor = 'hsl(0, 0%, 90%)'
 const deadColor = 'hsl(0, 0%, 10%)'
 
-const worker = new Worker('worker.js')
+const worker = new Worker('life.js')
 const buffers = {
-  alive1: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
-  alive2: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
-  dead1: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
-  dead2: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
+  state1: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
+  state2: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * cols * rows),
   lock: new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT),
 }
-let alive1 = new Int32Array(buffers.alive1)
-let alive2 = new Int32Array(buffers.alive2)
-let dead1 = new Int32Array(buffers.dead1)
-let dead2 = new Int32Array(buffers.dead2)
+let state1 = new Int32Array(buffers.state1)
+let state2 = new Int32Array(buffers.state2)
 const lock = new Int32Array(buffers.lock)
 
 const root = document.querySelector('#root')
@@ -34,19 +30,15 @@ root.appendChild(stats.dom)
 const ctx = canvas.getContext('2d')
 ctx.scale(size, size)
 
-const renderCells = (cells, color) => {
+const render = () => {
   let i = 0
-  while (i < cells.length && cells[i] > -1) {
-    const x = cells[i]
+  while (i < state1.length && state1[i] !== 0) {
+    const x = state1[i]
+    const [index, color] = x > 0 ? [x - 1, aliveColor] : [Math.abs(x) - 1, deadColor]
     ctx.fillStyle = color
-    ctx.fillRect(x % cols, Math.floor(x / cols), 1, 1)
+    ctx.fillRect(index % cols, Math.floor(index / cols), 1, 1)
     i += 1
   }
-}
-
-const render = () => {
-  renderCells(alive1, aliveColor)
-  renderCells(dead1, deadColor)
 }
 
 worker.addEventListener('message', () => {
@@ -56,9 +48,8 @@ worker.addEventListener('message', () => {
   Atomics.store(lock, 0, 1)
   render()
   Atomics.store(lock, 0, 0)
-  Atomics.notify(lock, 0, 1)
-  ;[alive1, alive2] = [alive2, alive1]
-  ;[dead1, dead2] = [dead2, dead1]
+  Atomics.notify(lock, 0)
+  ;[state1, state2] = [state2, state1]
 })
 
 const options = { cols, rows }
