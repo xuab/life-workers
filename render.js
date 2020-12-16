@@ -15,8 +15,10 @@ const render = (diff1, diff2, locks, ctx, options, colors) => {
   Atomics.store(locks, 0, 1)
   Atomics.notify(locks, 0)
 
-  Atomics.wait(locks, 2, 0)
-  requestAnimationFrame(() => render(diff2, diff1, locks, ctx, options, colors))
+  requestAnimationFrame(() => {
+    Atomics.wait(locks, 2, 0)
+    render(diff2, diff1, locks, ctx, options, colors)
+  })
 }
 
 self.onmessage = (m) => {
