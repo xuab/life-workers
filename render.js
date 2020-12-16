@@ -1,11 +1,4 @@
-let options = null
-let colors = null
-let diff1 = null
-let diff2 = null
-let locks = null
-let ctx = null
-
-const render = () => {
+const render = (diff1, diff2, locks, ctx, options, colors) => {
   self.postMessage('tick')
   Atomics.wait(locks, 1, 0)
 
@@ -21,25 +14,17 @@ const render = () => {
   Atomics.store(locks, 1, 0)
   Atomics.store(locks, 0, 1)
   Atomics.notify(locks, 0)
-  ;[diff1, diff2] = [diff2, diff1]
 
   Atomics.wait(locks, 2, 0)
-  requestAnimationFrame(render)
+  requestAnimationFrame(() => render(diff2, diff1, locks, ctx, options, colors))
 }
 
 self.onmessage = (m) => {
-  switch (m.data.type) {
-    case 'init':
-      diff1 = new Int32Array(m.data.buffers.diff1)
-      diff2 = new Int32Array(m.data.buffers.diff2)
-      locks = new Int32Array(m.data.buffers.locks)
-      ctx = m.data.offscreenCanvas.getContext('2d')
-      ctx.scale(m.data.options.size, m.data.options.size)
-      options = m.data.options
-      colors = m.data.colors
-      render()
-      return
-    default:
-      return
-  }
+  const { buffers, offscreenCanvas, options, colors } = m.data
+  const diff1 = new Int32Array(buffers.diff1)
+  const diff2 = new Int32Array(buffers.diff2)
+  const locks = new Int32Array(buffers.locks)
+  const ctx = offscreenCanvas.getContext('2d')
+  ctx.scale(options.size, options.size)
+  render(diff1, diff2, locks, ctx, options, colors)
 }
