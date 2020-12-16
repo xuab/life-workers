@@ -4,12 +4,23 @@
     <style>
       #root {
         position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        display: flex; justify-content: center; align-items: center;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+      }
+      #header>* {
+        margin: 0 10px;
+      }
+      #life {
+        margin: 20px 0;
       }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="header">
+        <button id="toggle">Start</button>
+      </div>
+      <canvas id="life"></canvas>
+    </div>
     <script type="module" src="index.js"></script>
   </body>
 </html>
