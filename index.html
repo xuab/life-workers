@@ -5,9 +5,16 @@
       #root {
         position: absolute; top: 0; left: 0; right: 0; bottom: 0;
         display: flex; flex-direction: column; justify-content: center; align-items: center;
+        color: hsl(0, 0%, 90%);
+        font-family: Arial, Helvetica, sans-serif;
       }
-      #header>* {
-        margin: 0 10px;
+      #header>button {
+        margin: 0 5px;
+        width: 4rem;
+      }
+      #gen {
+        width: 2rem;
+        display: inline-block;
       }
       #life {
         margin: 20px 0;
@@ -17,9 +24,10 @@
   <body>
     <div id="root">
       <div id="header">
+        <span>Generation <span id="gen"></span></span>
         <button id="toggle">Start</button>
       </div>
-      <canvas id="life"></canvas>
+      <div id="life"></div>
     </div>
     <script type="module" src="index.js"></script>
   </body>

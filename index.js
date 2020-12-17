@@ -27,16 +27,16 @@ const locks = new Int32Array(buffers.locks)
 const root = document.querySelector('#root')
 root.style.background = colors.dead
 
-const canvas = document.querySelector('#life')
-canvas.width = options.cols * options.size
-canvas.height = options.rows * options.size
-const offscreenCanvas = canvas.transferControlToOffscreen()
-
 const stats = new Stats()
 root.appendChild(stats.dom)
 
-let pause = true
 const toggleBtn = document.querySelector('#toggle')
+const genEl = document.querySelector('#gen')
+const life = document.querySelector('#life')
+
+let pause = true
+let gen = 1
+
 toggleBtn.onclick = () => {
   pause = !pause
   toggleBtn.textContent = pause ? 'Start' : 'Pause'
@@ -46,21 +46,33 @@ toggleBtn.onclick = () => {
 
 workers.render.onmessage = (m) => {
   if (m.data === 'tick') {
+    genEl.textContent = gen
+    gen += 1
     stats.end()
     stats.begin()
   }
 }
 
-workers.render.postMessage({
-  type: 'init',
-  options,
-  colors,
-  buffers,
-  offscreenCanvas,
-}, [offscreenCanvas])
+const initRender = () => {
+  const canvas = document.createElement('canvas')
+  canvas.width = options.cols * options.size
+  canvas.height = options.rows * options.size
+  life.textContent = ''
+  life.appendChild(canvas)
+  const offscreenCanvas = canvas.transferControlToOffscreen()
 
-workers.life.postMessage({
-  type: 'init',
-  options,
-  buffers,
-})
+  workers.render.postMessage({
+    type: 'init',
+    options,
+    colors,
+    buffers,
+    offscreenCanvas,
+  }, [offscreenCanvas])
+}
+
+const initLife = () => {
+  workers.life.postMessage({ type: 'init', options, buffers })
+}
+
+initRender()
+initLife()

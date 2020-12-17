@@ -1,5 +1,4 @@
 const render = (diff1, diff2, locks, ctx, options, colors) => {
-  self.postMessage('tick')
   Atomics.wait(locks, 1, 0)
 
   let i = 0
@@ -14,6 +13,7 @@ const render = (diff1, diff2, locks, ctx, options, colors) => {
   Atomics.store(locks, 1, 0)
   Atomics.store(locks, 0, 1)
   Atomics.notify(locks, 0)
+  self.postMessage('tick')
 
   requestAnimationFrame(() => {
     Atomics.wait(locks, 2, 0)

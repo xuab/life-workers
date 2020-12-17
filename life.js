@@ -11,14 +11,18 @@ const createNeighbours = (cols, rows) => {
   return neighbours
 }
 
-const init = (world1, diff1, locks) => {
-  let index = 0
-  for (let i = 0; i < diff1.length; i ++) {
+const init = (world1, diff1, locks, cols, rows) => {
+  for (let i = 0; i < world1.length; i ++) {
     const cell = Math.random() > 0.8 ? 1 : 0
     world1[i] = cell
-    Atomics.store(diff1, index, cell === 1 ? i + 1 : -i - 1)
+  }
+
+  let index = 0
+  for (let i = 0; i < world1.length; i ++) {
+    Atomics.store(diff1, index, world1[i] === 1 ? i + 1 : -i - 1)
     index += 1
   }
+
   Atomics.store(locks, 0, 0)
   Atomics.store(locks, 1, 1)
   Atomics.notify(locks, 1)
@@ -45,7 +49,10 @@ const step = (world1, world2, diff1, diff2, locks, neighbours) => {
   Atomics.store(locks, 0, 0)
   Atomics.store(locks, 1, 1)
   Atomics.notify(locks, 1)
-  requestAnimationFrame(() => step(world2, world1, diff2, diff1, locks, neighbours))
+  requestAnimationFrame(() => {
+    Atomics.wait(locks, 2, 0)
+    step(world2, world1, diff2, diff1, locks, neighbours)
+  })
 }
 
 self.onmessage = (m) => {
@@ -56,9 +63,9 @@ self.onmessage = (m) => {
       const diff1 = new Int32Array(buffers.diff1)
       const diff2 = new Int32Array(buffers.diff2)
       const locks = new Int32Array(buffers.locks)
-      const world1 = [...Array(cols * rows)]
+      const world1 = [...Array(cols * rows)].fill(0)
       const world2 = [...Array(cols * rows)]
-      init(world1, diff1, locks)
+      init(world1, diff1, locks, cols, rows)
       const neighbours = createNeighbours(cols, rows)
       step(world1, world2, diff2, diff1, locks, neighbours)
       return
