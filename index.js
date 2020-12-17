@@ -20,6 +20,7 @@ const buffer = (n) => new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * n)
 const buffers = {
   diff1: buffer(options.cols * options.rows),
   diff2: buffer(options.cols * options.rows),
+  // 0 = lock step; 1 = lock render; 2 = lock loop
   locks: buffer(3),
 }
 const locks = new Int32Array(buffers.locks)
