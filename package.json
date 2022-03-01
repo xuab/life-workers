@@ -1,0 +1,23 @@
+{
+  "name": "game-of-life",
+  "version": "0.1.0",
+  "description": "HTML5 implementation of the [Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) using Web Workers, SharedArrayBuffer, Atomics, and OffscreenCanvas",
+  "main": "index.js",
+  "scripts": {
+    "start": "serve public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xuab/game-of-life.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xuab/game-of-life/issues"
+  },
+  "homepage": "https://github.com/xuab/game-of-life#readme",
+  "dependencies": {
+    "serve": "^13.0.2"
+  }
+}
