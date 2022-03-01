@@ -1,3 +1,11 @@
+const init = (world1, diff1) => {
+  for (const i of world1.keys()) {
+    const cell = Math.random() > 0.9 ? 1 : 0
+    Atomics.store(world1, i, cell)
+    Atomics.store(diff1, i, cell === 1 ? i + 1 : -i - 1)
+  }
+}
+
 const createNeighbours = (cols, rows) => {
   neighbours = [...Array(cols * rows)]
   for (let i = 0; i < rows; i++) {
@@ -11,23 +19,7 @@ const createNeighbours = (cols, rows) => {
   return neighbours
 }
 
-const init = (world1, diff1) => {
-  // init world
-  for (let i = 0; i < world1.length; i ++) {
-    const cell = Math.random() > 0.8 ? 1 : 0
-    world1[i] = cell
-  }
-
-  // init diff cells
-  let index = 0
-  for (let i = 0; i < world1.length; i ++) {
-    Atomics.store(diff1, index, world1[i] === 1 ? i + 1 : -i - 1)
-    index += 1
-  }
-}
-
-const step = (world1, world2, diff1, diff2, locks, neighbours) => {
-  // compute new world and diff cells
+const step = (world1, world2, diff1, diff2, state, neighbours) => {
   let index = 0
   world1.forEach((cell, i) => {
     const count = neighbours[i].reduce((a, b) => a + world1[b], 0)
@@ -43,16 +35,22 @@ const step = (world1, world2, diff1, diff2, locks, neighbours) => {
   })
   if (index < diff1.length) diff1[index] = 0
 
-  // lock step
-  Atomics.store(locks, 0, 0)
+  // Unlock render worker
+  Atomics.store(state, 1, 1)
+  Atomics.notify(state, 1)
+  
+  // Increment counter
+  const n = Atomics.load(state, 3)
+  Atomics.store(state, 3, n + 1)
 
-  // unlock render
-  Atomics.store(locks, 1, 1)
-  Atomics.notify(locks, 1)
+  // Lock self
+  Atomics.store(state, 0, 0)
+  Atomics.wait(state, 0, 0)
 
-  // wait for step unlock
-  Atomics.wait(locks, 0, 0)
-  step(world2, world1, diff2, diff1, locks, neighbours)
+  // Wait for main thread
+  Atomics.wait(state, 2, 0)
+
+  step(world2, world1, diff2, diff1, state, neighbours)
 }
 
 self.onmessage = (m) => {
@@ -60,11 +58,10 @@ self.onmessage = (m) => {
   const { cols, rows } = options
   const diff1 = new Int32Array(buffers.diff1)
   const diff2 = new Int32Array(buffers.diff2)
-  const locks = new Int32Array(buffers.locks)
-  const world1 = [...Array(cols * rows)].fill(0)
-  const world2 = [...Array(cols * rows)]
-
-  init(world1, diff1)
+  const state = new Int32Array(buffers.state)
+  const world1 = new Int32Array(cols * rows).fill(0)
+  const world2 = new Int32Array(cols * rows)
   const neighbours = createNeighbours(cols, rows)
-  step(world1, world2, diff2, diff1, locks, neighbours)
+  init(world1, diff1)
+  step(world1, world2, diff2, diff1, state, neighbours)
 }

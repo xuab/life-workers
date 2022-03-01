@@ -1,44 +1,36 @@
-const render = (diff1, diff2, locks, ctx, options, colors) => {
-  // draw diff cells
-  let i = 0
-  while (i < diff1.length && diff1[i] !== 0) {
+const render = (diff1, diff2, state, ctx, cols) => {
+  requestAnimationFrame(() => {
+    // Lock self
+    Atomics.store(state, 1, 0)
+    Atomics.wait(state, 1, 0)
+    render(diff2, diff1, state, ctx, cols)
+  })
+  
+  for (const i of diff1.keys()) {
     const x = diff1[i]
-    const [index, color] = x > 0 ? [x - 1, colors.alive] : [-x - 1, colors.dead]
+    if (x === 0) break
+    const [index, color] = x > 0 ? [x - 1, '#e1e1e1'] : [-x - 1, '#161616']
     ctx.fillStyle = color
-    ctx.fillRect(index % options.cols, Math.floor(index / options.cols), 1, 1)
-    i += 1
+    ctx.fillRect(index % cols, Math.floor(index / cols), 1, 1)
   }
 
-  // notify stats
-  self.postMessage('tick')
-
-  // lock render
-  Atomics.store(locks, 1, 0)
-
-  // unlock step
-  Atomics.store(locks, 0, 1)
-  Atomics.notify(locks, 0)
-
-  requestAnimationFrame(() => {
-    // wait for render/loop unlock
-    Atomics.wait(locks, 1, 0)
-    Atomics.wait(locks, 2, 0)
-
-    render(diff2, diff1, locks, ctx, options, colors)
-  })
+  // Unlock life worker
+  Atomics.store(state, 0, 1)
+  Atomics.notify(state, 0)
 }
 
 self.onmessage = (m) => {
-  const { buffers, offscreenCanvas, options, colors } = m.data
+  const { buffers, offscreenCanvas, options } = m.data
+  const { size, cols } = options
+
   const diff1 = new Int32Array(buffers.diff1)
   const diff2 = new Int32Array(buffers.diff2)
-  const locks = new Int32Array(buffers.locks)
+  const state = new Int32Array(buffers.state)
+
   const ctx = offscreenCanvas.getContext('2d')
-  ctx.scale(options.size, options.size)
+  ctx.scale(size, size)
 
-  // lock render and wait for unlock
-  Atomics.store(locks, 1, 1)
-  Atomics.wait(locks, 1, 0)
-
-  render(diff1, diff2, locks, ctx, options, colors)
+  // Wait life worker
+  Atomics.wait(state, 1, 0)
+  render(diff1, diff2, state, ctx, cols)
 }
